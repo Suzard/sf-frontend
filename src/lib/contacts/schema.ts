@@ -28,6 +28,23 @@ function requiredText(max: number, label: string) {
     .max(max, `${label} must be ${max} characters or fewer`);
 }
 
+/** Optional public image URL, matching the backend's HTTP(S)-only contract. */
+const optionalPhotoUrl = z
+  .string()
+  .trim()
+  .max(2048, "Photo URL must be 2048 characters or fewer")
+  .refine((value) => {
+    if (!value) return true;
+    try {
+      return ["http:", "https:"].includes(new URL(value).protocol);
+    } catch {
+      return false;
+    }
+  }, "Enter a valid HTTP(S) photo URL")
+  .transform((value) => value || null)
+  .nullable()
+  .default(null);
+
 export const contactInputSchema = z.object({
   first_name: requiredText(100, "First name"),
   last_name: requiredText(100, "Last name"),
@@ -41,6 +58,7 @@ export const contactInputSchema = z.object({
   phone: optionalText(40, "Phone"),
   company: optionalText(200, "Company"),
   job_title: optionalText(200, "Job title"),
+  photo_url: optionalPhotoUrl,
   address: optionalText(300, "Address"),
   city: optionalText(120, "City"),
   state: optionalText(120, "State"),
@@ -77,7 +95,7 @@ export function zodFieldErrors(
 export interface ContactFieldSpec {
   name: keyof ContactInput;
   label: string;
-  type?: "text" | "email" | "tel" | "textarea";
+  type?: "text" | "email" | "tel" | "url" | "textarea";
   required?: boolean;
   maxLength: number;
   placeholder?: string;
@@ -93,6 +111,21 @@ export interface ContactFieldGroup {
 }
 
 export const CONTACT_FIELD_GROUPS: ContactFieldGroup[] = [
+  {
+    title: "Profile photo",
+    description: "Add a public image URL, or leave it blank to show initials.",
+    fields: [
+      {
+        name: "photo_url",
+        label: "Photo URL",
+        type: "url",
+        maxLength: 2048,
+        placeholder: "https://images.example.com/ada.jpg",
+        autoComplete: "photo",
+        wide: true,
+      },
+    ],
+  },
   {
     title: "Identity",
     description: "First name, last name, and email are required.",

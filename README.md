@@ -1,7 +1,9 @@
 # sf-frontend
 
 Front end for the [Contacts API](http://127.0.0.1:8000/docs) — browse, search, sort,
-page through, create, edit, and delete contacts.
+page through, create, edit, and delete contacts. Contacts can optionally use a
+public profile photo URL, with their initials shown whenever no photo is set or
+the image cannot load.
 
 Next.js 16 (App Router) · TypeScript · Tailwind CSS · Zod · Jest + Testing Library
 + MSW · Playwright.
@@ -42,7 +44,7 @@ The landing route (`/` redirects here). What to check, top to bottom:
   selector. Both write to the URL, so the state survives a reload and is
   shareable.
 - **Table** — sortable `Name` and `Email` headers (the arrow shows the active
-  column and direction), an initials avatar per row, `Job title at Company` as
+  column and direction), a circular photo or initials avatar per row, `Job title at Company` as
   the subtitle, and per-row pencil (edit) and trash (delete) actions.
 - **Footer row** — `Showing 1–3 of 3` with Previous/Next, both disabled on a
   single page.
