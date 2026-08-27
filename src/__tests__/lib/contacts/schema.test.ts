@@ -13,6 +13,7 @@ function values(overrides: Record<string, string> = {}) {
     phone: "",
     company: "",
     job_title: "",
+    photo_url: "",
     address: "",
     city: "",
     state: "",
@@ -54,6 +55,21 @@ describe("contactInputSchema", () => {
   it("rejects a malformed email", () => {
     const result = contactInputSchema.safeParse(values({ email: "not-an-email" }));
     expect(zodFieldErrors(result.error!).email).toBe("Enter a valid email address");
+  });
+
+  it("accepts HTTP(S) photo URLs and rejects other URL schemes", () => {
+    expect(
+      contactInputSchema.parse(
+        values({ photo_url: " https://images.example.com/ada.jpg " }),
+      ).photo_url,
+    ).toBe("https://images.example.com/ada.jpg");
+
+    const result = contactInputSchema.safeParse(
+      values({ photo_url: "file:///tmp/ada.jpg" }),
+    );
+    expect(zodFieldErrors(result.error!).photo_url).toBe(
+      "Enter a valid HTTP(S) photo URL",
+    );
   });
 
   it("enforces the API's length limits", () => {

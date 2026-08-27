@@ -24,6 +24,7 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText(/last name/i)).toBeRequired();
     expect(screen.getByLabelText(/^email/i)).toBeRequired();
     expect(screen.getByLabelText(/phone/i)).not.toBeRequired();
+    expect(screen.getByLabelText(/photo url/i)).toHaveAttribute("type", "url");
     expect(screen.getByLabelText(/notes/i).tagName).toBe("TEXTAREA");
   });
 
@@ -32,6 +33,7 @@ describe("ContactForm", () => {
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByLabelText(/^email/i)).toHaveValue("ada@example.com");
+    expect(screen.getByLabelText(/photo url/i)).toHaveValue("");
     // Nulls become empty inputs rather than the string "null".
     expect(screen.getByLabelText(/street address/i)).toHaveValue("");
   });
