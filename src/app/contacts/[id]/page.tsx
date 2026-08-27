@@ -43,7 +43,6 @@ export default async function ContactDetailPage({ params }: PageProps) {
   if (!contact) notFound();
 
   const subtitle = jobLine(contact);
-  const address = addressLine(contact);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -102,7 +101,18 @@ export default async function ContactDetailPage({ params }: PageProps) {
         </Row>
         <Row label="Company">{contact.company}</Row>
         <Row label="Job title">{contact.job_title}</Row>
-        <Row label="Address">{address}</Row>
+        <Row label="Addresses">
+          {contact.addresses.length ? (
+            <ul className="space-y-1">
+              {contact.addresses.map((address) => (
+                <li key={address.id}>
+                  <span className="font-medium">{address.type}:</span>{" "}
+                  <span>{addressLine(address) ?? "—"}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Row>
         <Row label="Notes">
           {contact.notes ? (
             <span className="whitespace-pre-wrap">{contact.notes}</span>

@@ -13,6 +13,7 @@ import {
 import {
   contactInputSchema,
   formDataToValues,
+  valuesToContactInput,
   zodFieldErrors,
 } from "@/lib/contacts/schema";
 import type { Contact, FormState } from "@/lib/contacts/types";
@@ -39,8 +40,9 @@ export async function saveContactAction(
   formData: FormData,
 ): Promise<FormState> {
   const values = formDataToValues(formData);
+  const input = valuesToContactInput(values);
 
-  const parsed = contactInputSchema.safeParse(values);
+  const parsed = contactInputSchema.safeParse(input);
   if (!parsed.success) {
     return {
       status: "error",

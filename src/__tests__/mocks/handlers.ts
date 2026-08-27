@@ -10,6 +10,10 @@ export function api(path: string): string {
 export function makeContact(overrides: Partial<Contact> = {}): Contact {
   const first_name = overrides.first_name ?? "Ada";
   const last_name = overrides.last_name ?? "Lovelace";
+  const normalizedAddresses = overrides.addresses?.map((address, index) => ({
+    ...address,
+    id: address.id ?? index + 1,
+  }));
 
   return {
     id: 1,
@@ -20,16 +24,22 @@ export function makeContact(overrides: Partial<Contact> = {}): Contact {
     company: "Analytical Engines",
     job_title: "Mathematician",
     photo_url: null,
-    address: null,
-    city: "San Francisco",
-    state: "CA",
-    postal_code: null,
-    country: "USA",
     notes: null,
     created_at: "2026-08-19T17:04:53.743932Z",
     updated_at: "2026-08-19T17:04:53.743936Z",
     full_name: `${first_name} ${last_name}`,
     ...overrides,
+    addresses: normalizedAddresses ?? [
+      {
+        id: 1,
+        type: "Home",
+        address: null,
+        city: "San Francisco",
+        state: "CA",
+        postal_code: null,
+        country: "USA",
+      },
+    ],
   };
 }
 
