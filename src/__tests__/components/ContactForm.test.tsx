@@ -34,8 +34,7 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByLabelText(/^email/i)).toHaveValue("ada@example.com");
     expect(screen.getByLabelText(/photo url/i)).toHaveValue("");
-    // Nulls become empty inputs rather than the string "null".
-    expect(screen.getByLabelText(/street address/i)).toHaveValue("");
+    expect(screen.getAllByLabelText(/city/i)[0]).toHaveValue("San Francisco");
   });
 
   it("submits the entered values to the action", async () => {
@@ -54,6 +53,7 @@ describe("ContactForm", () => {
     const formData = action.mock.calls[0][1];
     expect(formData.get("first_name")).toBe("Grace");
     expect(formData.get("email")).toBe("grace@example.com");
+    expect(formData.get("addresses.0.type")).toBe("Home");
   });
 
   it("shows the summary and the per-field errors the action returns", async () => {

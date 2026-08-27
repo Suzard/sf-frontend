@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ContactInput } from "./types";
+import type { AddressInput, AddressType, ContactInput } from "./types";
 
 /**
  * Client/server-shared validation for the contact form.
@@ -45,6 +45,17 @@ const optionalPhotoUrl = z
   .nullable()
   .default(null);
 
+const addressTypeSchema = z.enum(["Home", "Work", "Other"]);
+
+const addressSchema = z.object({
+  type: addressTypeSchema,
+  address: optionalText(300, "Street address"),
+  city: optionalText(120, "City"),
+  state: optionalText(120, "State"),
+  postal_code: optionalText(20, "Postal code"),
+  country: optionalText(120, "Country"),
+});
+
 export const contactInputSchema = z.object({
   first_name: requiredText(100, "First name"),
   last_name: requiredText(100, "Last name"),
@@ -59,11 +70,7 @@ export const contactInputSchema = z.object({
   company: optionalText(200, "Company"),
   job_title: optionalText(200, "Job title"),
   photo_url: optionalPhotoUrl,
-  address: optionalText(300, "Address"),
-  city: optionalText(120, "City"),
-  state: optionalText(120, "State"),
-  postal_code: optionalText(20, "Postal code"),
-  country: optionalText(120, "Country"),
+  addresses: z.array(addressSchema).default([]),
   notes: z
     .string()
     .trim()
@@ -75,14 +82,12 @@ export const contactInputSchema = z.object({
 export type ContactFormValues = z.input<typeof contactInputSchema>;
 
 /** Collapse a ZodError into one message per field, keyed by input name. */
-export function zodFieldErrors(
-  error: z.ZodError,
-): Partial<Record<keyof ContactInput, string>> {
-  const fieldErrors: Partial<Record<keyof ContactInput, string>> = {};
+export function zodFieldErrors(error: z.ZodError): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
   for (const issue of error.issues) {
-    const key = issue.path[0];
-    if (typeof key === "string" && !(key in fieldErrors)) {
-      fieldErrors[key as keyof ContactInput] = issue.message;
+    const key = issue.path.join(".");
+    if (key && !(key in fieldErrors)) {
+      fieldErrors[key] = issue.message;
     }
   }
   return fieldErrors;
@@ -93,7 +98,7 @@ export function zodFieldErrors(
 /* ------------------------------------------------------------------ */
 
 export interface ContactFieldSpec {
-  name: keyof ContactInput;
+  name: string;
   label: string;
   type?: "text" | "email" | "tel" | "url" | "textarea";
   required?: boolean;
@@ -186,48 +191,6 @@ export const CONTACT_FIELD_GROUPS: ContactFieldGroup[] = [
     ],
   },
   {
-    title: "Address",
-    description: "Optional postal details.",
-    fields: [
-      {
-        name: "address",
-        label: "Street address",
-        maxLength: 300,
-        placeholder: "1 Market St, Suite 400",
-        autoComplete: "street-address",
-        wide: true,
-      },
-      {
-        name: "city",
-        label: "City",
-        maxLength: 120,
-        placeholder: "San Francisco",
-        autoComplete: "address-level2",
-      },
-      {
-        name: "state",
-        label: "State / region",
-        maxLength: 120,
-        placeholder: "CA",
-        autoComplete: "address-level1",
-      },
-      {
-        name: "postal_code",
-        label: "Postal code",
-        maxLength: 20,
-        placeholder: "94105",
-        autoComplete: "postal-code",
-      },
-      {
-        name: "country",
-        label: "Country",
-        maxLength: 120,
-        placeholder: "USA",
-        autoComplete: "country-name",
-      },
-    ],
-  },
-  {
     title: "Notes",
     description: "Anything worth remembering. No length limit.",
     fields: [
@@ -247,14 +210,74 @@ export const CONTACT_FIELDS: ContactFieldSpec[] = CONTACT_FIELD_GROUPS.flatMap(
   (group) => group.fields,
 );
 
+export const ADDRESS_TYPES: AddressType[] = ["Home", "Work", "Other"];
+export const ADDRESS_TEXT_FIELDS = [
+  "address",
+  "city",
+  "state",
+  "postal_code",
+  "country",
+] as const;
+
+export type AddressTextField = (typeof ADDRESS_TEXT_FIELDS)[number];
+
+export function addressFieldName(index: number, field: AddressTextField | "type"): string {
+  return `addresses.${index}.${field}`;
+}
+
+function normalizeAddress(values: Record<string, string>, index: number): AddressInput {
+  const address: Partial<Record<AddressTextField, string | null>> = {};
+  for (const field of ADDRESS_TEXT_FIELDS) {
+    const raw = values[addressFieldName(index, field)] ?? "";
+    const trimmed = raw.trim();
+    address[field] = trimmed ? trimmed : null;
+  }
+  return {
+    type: ADDRESS_TYPES[index],
+    address: address.address ?? null,
+    city: address.city ?? null,
+    state: address.state ?? null,
+    postal_code: address.postal_code ?? null,
+    country: address.country ?? null,
+  };
+}
+
+function hasAddressContent(address: AddressInput): boolean {
+  return ADDRESS_TEXT_FIELDS.some((field) => Boolean(address[field]));
+}
+
 /** Pull the contact fields out of a submitted form, as raw strings. */
-export function formDataToValues(
-  formData: FormData,
-): Record<keyof ContactInput, string> {
-  return Object.fromEntries(
-    CONTACT_FIELDS.map((field) => [
-      field.name,
-      String(formData.get(field.name) ?? ""),
-    ]),
-  ) as Record<keyof ContactInput, string>;
+export function formDataToValues(formData: FormData): Record<string, string> {
+  const values: Record<string, string> = Object.fromEntries(
+    CONTACT_FIELDS.map((field) => [field.name, String(formData.get(field.name) ?? "")]),
+  );
+
+  ADDRESS_TYPES.forEach((type, index) => {
+    values[addressFieldName(index, "type")] = type;
+    for (const field of ADDRESS_TEXT_FIELDS) {
+      values[addressFieldName(index, field)] = String(
+        formData.get(addressFieldName(index, field)) ?? "",
+      );
+    }
+  });
+
+  return values;
+}
+
+export function valuesToContactInput(values: Record<string, string>): ContactFormValues {
+  const addresses = ADDRESS_TYPES.map((_, index) => normalizeAddress(values, index)).filter(
+    hasAddressContent,
+  );
+
+  return {
+    first_name: values.first_name ?? "",
+    last_name: values.last_name ?? "",
+    email: values.email ?? "",
+    phone: values.phone ?? "",
+    company: values.company ?? "",
+    job_title: values.job_title ?? "",
+    photo_url: values.photo_url ?? "",
+    notes: values.notes ?? "",
+    addresses,
+  };
 }

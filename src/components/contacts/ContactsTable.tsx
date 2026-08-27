@@ -4,7 +4,7 @@ import ContactAvatar from "./ContactAvatar";
 import DeleteContactButton from "./DeleteContactButton";
 import SortHeader from "./SortHeader";
 import { buttonClasses } from "@/components/ui/Button";
-import { jobLine } from "@/lib/contacts/format";
+import { jobLine, primaryAddressLine } from "@/lib/contacts/format";
 import type { ContactListQuery } from "@/lib/contacts/query";
 import type { Contact } from "@/lib/contacts/types";
 
@@ -44,6 +44,7 @@ export default function ContactsTable({
         <tbody>
           {contacts.map((contact) => {
             const subtitle = jobLine(contact);
+            const address = primaryAddressLine(contact);
 
             return (
               <tr
@@ -63,6 +64,11 @@ export default function ContactsTable({
                       {subtitle ? (
                         <span className="block truncate text-[12px] text-muted-foreground lg:hidden">
                           {subtitle}
+                        </span>
+                      ) : null}
+                      {address ? (
+                        <span className="block truncate text-[12px] text-muted-foreground lg:hidden">
+                          {address}
                         </span>
                       ) : null}
                     </div>
